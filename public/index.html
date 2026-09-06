@@ -187,8 +187,8 @@
     <button data-value="damer">Damer</button>
   </div>
   <div class="filter-group" id="filter-status">
-    <button data-value="all" class="active">Alle</button>
-    <button data-value="upcoming">Kommende</button>
+    <button data-value="all">Alle</button>
+    <button data-value="upcoming" class="active">Kommende</button>
     <button data-value="played">Spillede</button>
   </div>
   <select id="filter-team">
@@ -202,7 +202,7 @@
 
 <script>
 let allMatches = [];
-let state = { side: 'all', category: 'all', team: 'all', status: 'all' };
+let state = { side: 'all', category: 'all', team: 'all', status: 'upcoming' };
 
 function parseMatchDateTime(m) {
   const [day, month, year] = m.date.split('/').map(Number);
