@@ -4,6 +4,10 @@ import { put } from '@vercel/blob';
 
 const ORG_ID = 10338; // SHI Hjørring Padel
 
+function normalizeTeamName(name) {
+  return name.replace(/(\p{L})(\d)/gu, '$1 $2');
+}
+
 async function fetchWithTimeout(url, ms = 10000) {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), ms);
@@ -32,7 +36,7 @@ async function getOrgTeams() {
     for (const team of league.teams) {
       teams.push({
         id: team.id,
-        name: team.name,
+        name: normalizeTeamName(team.name),
         division: team.division,
         region: team.region,
         category,
@@ -80,8 +84,8 @@ export default async function handler(req, res) {
           matchId: m.matchId,
           date: m.details?.date,
           time: m.details?.time,
-          homeTeam: m.team1.name,
-          awayTeam: m.team2.name,
+          homeTeam: isHome ? shiTeam?.name : m.team1.name,
+          awayTeam: isHome ? m.team2.name : shiTeam?.name,
           location: m.location,
           isHomeMatch: isHome,
           result: m.showResults ? `${m.team1.result} - ${m.team2.result}` : null,
