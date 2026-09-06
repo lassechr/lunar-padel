@@ -2,7 +2,7 @@ export const config = { maxDuration: 60 };
 
 const ORG_ID = 10338; // SHI Hjørring Padel
 
-async function fetchWithTimeout(url, ms = 8000) {
+async function fetchWithTimeout(url, ms = 15000) {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), ms);
   try {
