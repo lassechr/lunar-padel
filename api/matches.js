@@ -1,6 +1,20 @@
-export const config = { maxDuration: 30 };
+export const config = { maxDuration: 60 };
 
 const ORG_ID = 10338; // SHI Hjørring Padel
+
+async function fetchWithTimeout(url, ms = 8000) {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), ms);
+  try {
+    const res = await fetch(url, { signal: controller.signal });
+    clearTimeout(timeout);
+    if (!res.ok) return null;
+    return await res.json();
+  } catch {
+    clearTimeout(timeout);
+    return null;
+  }
+}
 
 async function getOrgTeams() {
   const urls = [
@@ -8,13 +22,10 @@ async function getOrgTeams() {
     `https://api.rankedin.com/v1/Organization/GetOrganisationTeamLeaguesAsync?organisationId=${ORG_ID}&isFinished=true&skip=0&take=100&language=en`,
   ];
 
-  const responses = await Promise.all(
-    urls.map((u) => fetch(u).then((r) => r.json()))
-  );
+  const responses = await Promise.all(urls.map((u) => fetchWithTimeout(u)));
+  const leagues = responses.filter(Boolean).flatMap((r) => r.payload ?? []);
 
-  const leagues = responses.flatMap((r) => r.payload ?? []);
   const teams = [];
-
   for (const league of leagues) {
     const category = league.name.includes('4P') ? 'damer' : 'herrer';
     for (const team of league.teams) {
@@ -38,16 +49,14 @@ export default async function handler(request) {
 
     const matchLists = await Promise.all(
       teams.map(async (team) => {
-        const res = await fetch(
+        const data = await fetchWithTimeout(
           `https://api.rankedin.com/v1/teamleague/GetTeamMatchesAsync?teamid=${team.id}&language=en`
         );
-        if (!res.ok) return [];
-        const data = await res.json();
-        return data.matches ?? [];
+        return data?.matches ?? [];
       })
     );
 
-    const seen = new Set(); // undgå dubletter hvis begge hold i en kamp er SHI-hold
+    const seen = new Set();
     const allMatches = [];
 
     for (const matches of matchLists) {
