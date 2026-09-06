@@ -176,7 +176,15 @@ async function loadMatches() {
 }
 
 function populateTeamDropdown() {
-  const teams = [...new Set(allMatches.map(m => m.team))].sort();
+  const teams = [...new Set(allMatches.map(m => m.team))];
+
+  teams.sort((a, b) => {
+    const numA = parseInt((a.match(/\d+/g) || []).pop() || 0, 10);
+    const numB = parseInt((b.match(/\d+/g) || []).pop() || 0, 10);
+    if (numA !== numB) return numA - numB;
+    return a.localeCompare(b);
+  });
+
   const select = document.getElementById('filter-team');
   teams.forEach(team => {
     const opt = document.createElement('option');
