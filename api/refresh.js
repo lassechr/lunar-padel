@@ -89,26 +89,25 @@ export default async function handler(req, res) {
         const team1Known = teamById[m.team1.id];
         const team2Known = teamById[m.team2.id];
 
-        cconst override = overrides[m.matchId];
-const finalDate = override?.date ?? m.details?.date;
-const finalTime = override?.time ?? m.details?.time;
+        const override = overrides[m.matchId];
+        const finalDate = override?.date ?? m.details?.date;
+        const finalTime = override?.time ?? m.details?.time;
 
-const relatedTeams = [team1Known?.name, team2Known?.name].filter(Boolean);
+        const relatedTeams = [team1Known?.name, team2Known?.name].filter(Boolean);
 
-allMatches.push({
-  matchId: m.matchId,
-  date: finalDate,
-  time: finalTime,
-  homeTeam: team1Known ? team1Known.name : m.team1.name,
-  awayTeam: team2Known ? team2Known.name : m.team2.name,
-  location: m.location,
-  isHomeMatch: isHome,
-  result: m.showResults ? `${m.team1.result} - ${m.team2.result}` : null,
-  team: shiTeam?.name,
-  teams: relatedTeams,
-  category: shiTeam?.category,
-  division: shiTeam?.division,
-});
+        allMatches.push({
+          matchId: m.matchId,
+          date: finalDate,
+          time: finalTime,
+          homeTeam: team1Known ? team1Known.name : m.team1.name,
+          awayTeam: team2Known ? team2Known.name : m.team2.name,
+          location: m.location,
+          isHomeMatch: isHome,
+          result: m.showResults ? `${m.team1.result} - ${m.team2.result}` : null,
+          team: shiTeam?.name,
+          teams: relatedTeams,
+          category: shiTeam?.category,
+          division: shiTeam?.division,
         });
       }
     }
