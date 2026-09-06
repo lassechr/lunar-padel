@@ -1,12 +1,19 @@
 export const config = { maxDuration: 60 };
 
 import { put } from '@vercel/blob';
-import { overrides } from './overrides.js';
+import { getOverrides } from './overrides-store.js';
 
 const ORG_ID = 10338; // SHI Hjørring Padel
 
 function normalizeTeamName(name) {
   return name.replace(/(\p{L})(\d)/gu, '$1 $2');
+}
+
+function parseDanishDate(dateStr, timeStr) {
+  const [day, month, year] = dateStr.split('/').map(Number);
+  const timePart = (timeStr.split(' ')[1] || '00:00');
+  const [hour, minute] = timePart.split(':').map(Number);
+  return new Date(year, month - 1, day, hour, minute).getTime();
 }
 
 async function fetchWithTimeout(url, ms = 10000) {
@@ -63,6 +70,7 @@ async function fetchInBatches(teams, batchSize = 10) {
 
 export default async function handler(req, res) {
   try {
+    const overrides = await getOverrides();
     const teams = await getOrgTeams();
     const teamById = Object.fromEntries(teams.map((t) => [t.id, t]));
     const matchLists = await fetchInBatches(teams, 10);
@@ -101,7 +109,7 @@ export default async function handler(req, res) {
       }
     }
 
-    allMatches.sort((a, b) => new Date(a.date + ' ' + a.time) - new Date(b.date + ' ' + b.time));
+    allMatches.sort((a, b) => parseDanishDate(a.date, a.time) - parseDanishDate(b.date, b.time));
 
     await put('matches.json', JSON.stringify({ matches: allMatches, updatedAt: new Date().toISOString() }), {
       access: 'public',
