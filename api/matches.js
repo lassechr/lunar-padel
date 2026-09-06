@@ -1,17 +1,19 @@
-export const config = { runtime: 'edge' }; // hurtig, ingen cold start-ventetid
+export const config = { runtime: 'edge' };
 
 const TEAM_IDS = [
   3281205, // SHI Hjørring Padel Herre 1
   // tilføj flere hold-ID'er her efterhånden som du finder dem
 ];
 
-const CLUB_NAME_MATCH = 'SHI Hjørring'; // bruges til at afgøre hjemme/ude
+const CLUB_NAME_MATCH = 'SHI Hjørring';
 
 export default async function handler(request) {
   try {
     const results = await Promise.all(
       TEAM_IDS.map(async (teamId) => {
-        const res = await fetch(`ENDPOINT_URL_HER?teamId=${teamId}`); // <-- mangler den rigtige URL
+        const res = await fetch(
+          `https://api.rankedin.com/v1/teamleague/GetTeamMatchesAsync?teamid=${teamId}&language=en`
+        );
         if (!res.ok) throw new Error(`RankedIn svarede ${res.status} for team ${teamId}`);
         const data = await res.json();
         return data.matches ?? [];
@@ -32,7 +34,7 @@ export default async function handler(request) {
       };
     });
 
-    allMatches.sort((a, b) => new Date(a.details?.time) - new Date(b.details?.time));
+    allMatches.sort((a, b) => new Date(a.date + ' ' + a.time) - new Date(b.date + ' ' + b.time));
 
     return new Response(JSON.stringify({ matches: allMatches }), {
       headers: { 'content-type': 'application/json', 'cache-control': 's-maxage=1800' },
