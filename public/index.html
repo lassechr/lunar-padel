@@ -4,6 +4,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Lunar Padel – SHI Hjørring holdkampe</title>
+<link rel="icon" href="/favicon.ico" sizes="any">
+<link rel="icon" href="/favicon-32x32.png" type="image/png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <style>
   :root {
     --bg: #0f172a;
@@ -27,6 +30,33 @@
     max-width: 900px;
     margin: 0 auto 1.5rem;
     text-align: center;
+  }
+  .header-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    max-width: 900px;
+    margin: 0 auto 1rem;
+  }
+  .club-logo {
+    height: 48px;
+    width: auto;
+  }
+  .shop-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    background: var(--card);
+    border: 1px solid var(--card-border);
+    color: var(--accent);
+    padding: 0.5rem 0.9rem;
+    border-radius: 999px;
+    font-size: 0.8rem;
+    text-decoration: none;
+    font-weight: 600;
+  }
+  .shop-badge:hover {
+    border-color: var(--accent);
   }
   h1 {
     font-size: 1.5rem;
@@ -129,6 +159,12 @@
 <body>
 
 <header>
+  <div class="header-top">
+    <img src="/logo.png" alt="SHI Hjørring Padel logo" class="club-logo">
+    <a href="https://purepadel.dk" target="_blank" rel="noopener" class="shop-badge">
+      🛒 Se udstyr på PurePadel.dk
+    </a>
+  </div>
   <h1>SHI Hjørring Padel</h1>
   <p>Overblik over holdkampe – hjemme og ude</p>
 </header>
