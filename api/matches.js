@@ -2,7 +2,7 @@ export const config = { maxDuration: 60 };
 
 const ORG_ID = 10338; // SHI Hjørring Padel
 
-async function fetchWithTimeout(url, ms = 20000) {
+async function fetchWithTimeout(url, ms = 10000) {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), ms);
   try {
@@ -43,7 +43,7 @@ async function getOrgTeams() {
 }
 
 // Kør kald i bundter af BATCH_SIZE ad gangen i stedet for alle på én gang
-async function fetchInBatches(teams, batchSize = 5) {
+async function fetchInBatches(teams, batchSize = 10) {
   const results = [];
   for (let i = 0; i < teams.length; i += batchSize) {
     const batch = teams.slice(i, i + batchSize);
