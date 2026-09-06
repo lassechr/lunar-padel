@@ -4,6 +4,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Lunar Padel – SHI Hjørring holdkampe</title>
+<link rel="icon" href="/favicon.ico" sizes="any">
+<link rel="icon" href="/favicon-32x32.png" type="image/png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <style>
   :root {
     --bg: #0f172a;
@@ -27,6 +30,33 @@
     max-width: 900px;
     margin: 0 auto 1.5rem;
     text-align: center;
+  }
+  .header-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    max-width: 900px;
+    margin: 0 auto 1rem;
+  }
+  .club-logo {
+    height: 48px;
+    width: auto;
+  }
+  .shop-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    background: var(--card);
+    border: 1px solid var(--card-border);
+    color: var(--accent);
+    padding: 0.5rem 0.9rem;
+    border-radius: 999px;
+    font-size: 0.8rem;
+    text-decoration: none;
+    font-weight: 600;
+  }
+  .shop-badge:hover {
+    border-color: var(--accent);
   }
   h1 {
     font-size: 1.5rem;
@@ -98,10 +128,16 @@
     font-size: 0.95rem;
   }
   .match-teams .vs { color: var(--text-dim); font-weight: 400; }
-  .match-meta {
+  .match-date {
+    color: var(--accent);
+    font-size: 0.85rem;
+    font-weight: 700;
+    margin-top: 0.3rem;
+  }
+  .match-location {
     color: var(--text-dim);
-    font-size: 0.8rem;
-    margin-top: 0.2rem;
+    font-size: 0.78rem;
+    margin-top: 0.15rem;
   }
   .badge {
     font-size: 0.7rem;
@@ -129,6 +165,12 @@
 <body>
 
 <header>
+  <div class="header-top">
+    <img src="/logo.png" alt="SHI Hjørring Padel logo" class="club-logo">
+    <a href="https://purepadel.dk" target="_blank" rel="noopener" class="shop-badge">
+      🛒 Se udstyr på PurePadel.dk
+    </a>
+  </div>
   <h1>SHI Hjørring Padel</h1>
   <p>Overblik over holdkampe – hjemme og ude</p>
 </header>
@@ -144,6 +186,11 @@
     <button data-value="herrer">Herrer</button>
     <button data-value="damer">Damer</button>
   </div>
+  <div class="filter-group" id="filter-status">
+    <button data-value="all" class="active">Alle</button>
+    <button data-value="upcoming">Kommende</button>
+    <button data-value="played">Spillede</button>
+  </div>
   <select id="filter-team">
     <option value="all">Alle hold</option>
   </select>
@@ -155,7 +202,7 @@
 
 <script>
 let allMatches = [];
-let state = { side: 'all', category: 'all', team: 'all' };
+let state = { side: 'all', category: 'all', team: 'all', status: 'all' };
 
 async function loadMatches() {
   try {
@@ -171,7 +218,22 @@ async function loadMatches() {
 }
 
 function populateTeamDropdown() {
-  const teams = [...new Set(allMatches.map(m => m.team))].sort();
+  const teamCategory = {};
+  allMatches.forEach(m => { teamCategory[m.team] = m.category; });
+
+  const teams = [...new Set(allMatches.map(m => m.team))];
+
+  teams.sort((a, b) => {
+    const catA = teamCategory[a] === 'herrer' ? 0 : 1;
+    const catB = teamCategory[b] === 'herrer' ? 0 : 1;
+    if (catA !== catB) return catA - catB;
+
+    const numA = parseInt((a.match(/\d+/g) || []).pop() || 0, 10);
+    const numB = parseInt((b.match(/\d+/g) || []).pop() || 0, 10);
+    if (numA !== numB) return numA - numB;
+    return a.localeCompare(b);
+  });
+
   const select = document.getElementById('filter-team');
   teams.forEach(team => {
     const opt = document.createElement('option');
@@ -182,14 +244,12 @@ function populateTeamDropdown() {
 }
 
 function formatDate(dateStr) {
-  // dateStr er "dd/mm/yyyy"
   const [d, m, y] = dateStr.split('/');
   const months = ['jan','feb','mar','apr','maj','jun','jul','aug','sep','okt','nov','dec'];
   return `${d}. ${months[parseInt(m,10)-1]} ${y}`;
 }
 
 function formatTime(timeStr) {
-  // timeStr er "dd/mm/yyyy HH:mm"
   const parts = timeStr.split(' ');
   return parts[1] || '';
 }
@@ -200,6 +260,8 @@ function render() {
     if (state.side === 'away' && m.isHomeMatch) return false;
     if (state.category !== 'all' && m.category !== state.category) return false;
     if (state.team !== 'all' && m.team !== state.team) return false;
+    if (state.status === 'upcoming' && m.result !== null) return false;
+    if (state.status === 'played' && m.result === null) return false;
     return true;
   });
 
@@ -216,9 +278,8 @@ function render() {
         <div class="match-teams">
           ${m.homeTeam} <span class="vs">vs</span> ${m.awayTeam}
         </div>
-        <div class="match-meta">
-          ${formatDate(m.date)} · ${formatTime(m.time)} · ${m.location || 'Lokation ukendt'}
-        </div>
+        <div class="match-date">${formatDate(m.date)} · ${formatTime(m.time)}</div>
+        <div class="match-location">${m.location || 'Lokation ukendt'}</div>
       </div>
       <div style="display:flex; align-items:center; gap:0.75rem;">
         <span class="badge ${m.isHomeMatch ? 'home' : 'away'}">
@@ -243,6 +304,7 @@ function setupFilterGroup(id, key) {
 
 setupFilterGroup('filter-side', 'side');
 setupFilterGroup('filter-category', 'category');
+setupFilterGroup('filter-status', 'status');
 document.getElementById('filter-team').addEventListener('change', (e) => {
   state.team = e.target.value;
   render();
