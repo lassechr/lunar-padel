@@ -23,12 +23,9 @@ async function fetchWithTimeout(url, ms = 10000) {
 }
 
 async function getOrgTeams() {
-  const urls = [
-    `https://api.rankedin.com/v1/Organization/GetOrganisationTeamLeaguesAsync?organisationId=${ORG_ID}&isFinished=false&skip=0&take=100&language=en`,
-    `https://api.rankedin.com/v1/Organization/GetOrganisationTeamLeaguesAsync?organisationId=${ORG_ID}&isFinished=true&skip=0&take=100&language=en`,
-  ];
-  const responses = await Promise.all(urls.map((u) => fetchWithTimeout(u)));
-  const leagues = responses.filter(Boolean).flatMap((r) => r.payload ?? []);
+  const url = `https://api.rankedin.com/v1/Organization/GetOrganisationTeamLeaguesAsync?organisationId=${ORG_ID}&isFinished=false&skip=0&take=100&language=en`;
+  const response = await fetchWithTimeout(url);
+  const leagues = response?.payload ?? [];
 
   const teams = [];
   for (const league of leagues) {
