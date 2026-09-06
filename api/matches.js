@@ -1,4 +1,4 @@
-export const config = { runtime: 'edge' };
+export const config = { maxDuration: 30 };
 
 const ORG_ID = 10338; // SHI Hjørring Padel
 
