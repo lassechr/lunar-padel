@@ -144,6 +144,11 @@
     <button data-value="herrer">Herrer</button>
     <button data-value="damer">Damer</button>
   </div>
+  <div class="filter-group" id="filter-status">
+    <button data-value="all" class="active">Alle</button>
+    <button data-value="upcoming">Kommende</button>
+    <button data-value="played">Spillede</button>
+  </div>
   <select id="filter-team">
     <option value="all">Alle hold</option>
   </select>
@@ -155,7 +160,7 @@
 
 <script>
 let allMatches = [];
-let state = { side: 'all', category: 'all', team: 'all' };
+let state = { side: 'all', category: 'all', team: 'all', status: 'all' };
 
 async function loadMatches() {
   try {
@@ -182,14 +187,12 @@ function populateTeamDropdown() {
 }
 
 function formatDate(dateStr) {
-  // dateStr er "dd/mm/yyyy"
   const [d, m, y] = dateStr.split('/');
   const months = ['jan','feb','mar','apr','maj','jun','jul','aug','sep','okt','nov','dec'];
   return `${d}. ${months[parseInt(m,10)-1]} ${y}`;
 }
 
 function formatTime(timeStr) {
-  // timeStr er "dd/mm/yyyy HH:mm"
   const parts = timeStr.split(' ');
   return parts[1] || '';
 }
@@ -200,6 +203,8 @@ function render() {
     if (state.side === 'away' && m.isHomeMatch) return false;
     if (state.category !== 'all' && m.category !== state.category) return false;
     if (state.team !== 'all' && m.team !== state.team) return false;
+    if (state.status === 'upcoming' && m.result !== null) return false;
+    if (state.status === 'played' && m.result === null) return false;
     return true;
   });
 
@@ -243,6 +248,7 @@ function setupFilterGroup(id, key) {
 
 setupFilterGroup('filter-side', 'side');
 setupFilterGroup('filter-category', 'category');
+setupFilterGroup('filter-status', 'status');
 document.getElementById('filter-team').addEventListener('change', (e) => {
   state.team = e.target.value;
   render();
