@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="da">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lunar Padel – SHI Hjørring holdkampe</title>
+<style>
+  :root {
+    --bg: #0f172a;
+    --card: #1e293b;
+    --card-border: #334155;
+    --text: #e2e8f0;
+    --text-dim: #94a3b8;
+    --accent: #38bdf8;
+    --home: #22c55e;
+    --away: #f97316;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    padding: 1rem;
+  }
+  header {
+    max-width: 900px;
+    margin: 0 auto 1.5rem;
+    text-align: center;
+  }
+  h1 {
+    font-size: 1.5rem;
+    margin: 0 0 0.25rem;
+  }
+  header p {
+    color: var(--text-dim);
+    margin: 0;
+    font-size: 0.9rem;
+  }
+  .filters {
+    max-width: 900px;
+    margin: 0 auto 1.5rem;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    justify-content: center;
+  }
+  .filter-group {
+    display: flex;
+    gap: 0.25rem;
+    background: var(--card);
+    border: 1px solid var(--card-border);
+    border-radius: 10px;
+    padding: 0.25rem;
+  }
+  .filter-group button {
+    background: transparent;
+    border: none;
+    color: var(--text-dim);
+    padding: 0.4rem 0.8rem;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 0.85rem;
+  }
+  .filter-group button.active {
+    background: var(--accent);
+    color: #0f172a;
+    font-weight: 600;
+  }
+  select {
+    background: var(--card);
+    border: 1px solid var(--card-border);
+    color: var(--text);
+    padding: 0.5rem 0.75rem;
+    border-radius: 10px;
+    font-size: 0.85rem;
+  }
+  .matches {
+    max-width: 900px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+  }
+  .match-card {
+    background: var(--card);
+    border: 1px solid var(--card-border);
+    border-radius: 12px;
+    padding: 0.9rem 1rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+  .match-teams {
+    font-weight: 600;
+    font-size: 0.95rem;
+  }
+  .match-teams .vs { color: var(--text-dim); font-weight: 400; }
+  .match-meta {
+    color: var(--text-dim);
+    font-size: 0.8rem;
+    margin-top: 0.2rem;
+  }
+  .badge {
+    font-size: 0.7rem;
+    font-weight: 700;
+    padding: 0.2rem 0.55rem;
+    border-radius: 999px;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+  }
+  .badge.home { background: rgba(34,197,94,0.15); color: var(--home); }
+  .badge.away { background: rgba(249,115,22,0.15); color: var(--away); }
+  .result {
+    font-weight: 700;
+    font-size: 1rem;
+    min-width: 60px;
+    text-align: right;
+  }
+  .empty, .loading {
+    text-align: center;
+    color: var(--text-dim);
+    padding: 2rem;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>SHI Hjørring Padel</h1>
+  <p>Overblik over holdkampe – hjemme og ude</p>
+</header>
+
+<div class="filters">
+  <div class="filter-group" id="filter-side">
+    <button data-value="all" class="active">Alle</button>
+    <button data-value="home">Hjemme</button>
+    <button data-value="away">Ude</button>
+  </div>
+  <div class="filter-group" id="filter-category">
+    <button data-value="all" class="active">Alle</button>
+    <button data-value="herrer">Herrer</button>
+    <button data-value="damer">Damer</button>
+  </div>
+  <select id="filter-team">
+    <option value="all">Alle hold</option>
+  </select>
+</div>
+
+<div class="matches" id="matches">
+  <div class="loading">Henter kampe…</div>
+</div>
+
+<script>
+let allMatches = [];
+let state = { side: 'all', category: 'all', team: 'all' };
+
+async function loadMatches() {
+  try {
+    const res = await fetch('/api/matches');
+    const data = await res.json();
+    allMatches = data.matches || [];
+    populateTeamDropdown();
+    render();
+  } catch (err) {
+    document.getElementById('matches').innerHTML =
+      '<div class="empty">Kunne ikke hente kampe lige nu.</div>';
+  }
+}
+
+function populateTeamDropdown() {
+  const teams = [...new Set(allMatches.map(m => m.team))].sort();
+  const select = document.getElementById('filter-team');
+  teams.forEach(team => {
+    const opt = document.createElement('option');
+    opt.value = team;
+    opt.textContent = team;
+    select.appendChild(opt);
+  });
+}
+
+function formatDate(dateStr) {
+  // dateStr er "dd/mm/yyyy"
+  const [d, m, y] = dateStr.split('/');
+  const months = ['jan','feb','mar','apr','maj','jun','jul','aug','sep','okt','nov','dec'];
+  return `${d}. ${months[parseInt(m,10)-1]} ${y}`;
+}
+
+function formatTime(timeStr) {
+  // timeStr er "dd/mm/yyyy HH:mm"
+  const parts = timeStr.split(' ');
+  return parts[1] || '';
+}
+
+function render() {
+  const filtered = allMatches.filter(m => {
+    if (state.side === 'home' && !m.isHomeMatch) return false;
+    if (state.side === 'away' && m.isHomeMatch) return false;
+    if (state.category !== 'all' && m.category !== state.category) return false;
+    if (state.team !== 'all' && m.team !== state.team) return false;
+    return true;
+  });
+
+  const container = document.getElementById('matches');
+
+  if (filtered.length === 0) {
+    container.innerHTML = '<div class="empty">Ingen kampe matcher dine filtre.</div>';
+    return;
+  }
+
+  container.innerHTML = filtered.map(m => `
+    <div class="match-card">
+      <div>
+        <div class="match-teams">
+          ${m.homeTeam} <span class="vs">vs</span> ${m.awayTeam}
+        </div>
+        <div class="match-meta">
+          ${formatDate(m.date)} · ${formatTime(m.time)} · ${m.location || 'Lokation ukendt'}
+        </div>
+      </div>
+      <div style="display:flex; align-items:center; gap:0.75rem;">
+        <span class="badge ${m.isHomeMatch ? 'home' : 'away'}">
+          ${m.isHomeMatch ? 'Hjemme' : 'Ude'}
+        </span>
+        <span class="result">${m.result || '–'}</span>
+      </div>
+    </div>
+  `).join('');
+}
+
+function setupFilterGroup(id, key) {
+  const group = document.getElementById(id);
+  group.addEventListener('click', (e) => {
+    if (e.target.tagName !== 'BUTTON') return;
+    group.querySelectorAll('button').forEach(b => b.classList.remove('active'));
+    e.target.classList.add('active');
+    state[key] = e.target.dataset.value;
+    render();
+  });
+}
+
+setupFilterGroup('filter-side', 'side');
+setupFilterGroup('filter-category', 'category');
+document.getElementById('filter-team').addEventListener('change', (e) => {
+  state.team = e.target.value;
+  render();
+});
+
+loadMatches();
+</script>
+
+</body>
+</html>
