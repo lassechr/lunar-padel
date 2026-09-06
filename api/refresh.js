@@ -68,6 +68,17 @@ async function fetchInBatches(teams, batchSize = 10) {
   return results;
 }
 
+// Vælger den bedste version, hvis samme matchId findes flere gange med modstridende data
+function isBetterVersion(candidate, current) {
+  const candidateComplete = !!candidate.location && !!candidate.details?.date;
+  const currentComplete = !!current.location && !!current.details?.date;
+  if (candidateComplete && !currentComplete) return true;
+  if (!candidateComplete && currentComplete) return false;
+  // Begge lige komplette (eller lige ufuldstændige) - foretræk den med et indtastet resultat
+  if (candidate.showResults && !current.showResults) return true;
+  return false;
+}
+
 export default async function handler(req, res) {
   try {
     const overrides = await getOverrides();
@@ -75,41 +86,46 @@ export default async function handler(req, res) {
     const teamById = Object.fromEntries(teams.map((t) => [t.id, t]));
     const matchLists = await fetchInBatches(teams, 10);
 
-    const seen = new Set();
-    const allMatches = [];
+    const byMatchId = new Map();
 
     for (const matches of matchLists) {
       for (const m of matches) {
-        if (seen.has(m.matchId)) continue;
-        seen.add(m.matchId);
-
-        const isHome = teamById[m.team1.id] !== undefined;
-        const shiTeam = isHome ? teamById[m.team1.id] : teamById[m.team2.id];
-
-        const team1Known = teamById[m.team1.id];
-        const team2Known = teamById[m.team2.id];
-
-        const override = overrides[m.matchId];
-        const finalDate = override?.date ?? m.details?.date;
-        const finalTime = override?.time ?? m.details?.time;
-
-        const relatedTeams = [team1Known?.name, team2Known?.name].filter(Boolean);
-
-        allMatches.push({
-          matchId: m.matchId,
-          date: finalDate,
-          time: finalTime,
-          homeTeam: team1Known ? team1Known.name : m.team1.name,
-          awayTeam: team2Known ? team2Known.name : m.team2.name,
-          location: m.location,
-          isHomeMatch: isHome,
-          result: m.showResults ? `${m.team1.result} - ${m.team2.result}` : null,
-          team: shiTeam?.name,
-          teams: relatedTeams,
-          category: shiTeam?.category,
-          division: shiTeam?.division,
-        });
+        const existing = byMatchId.get(m.matchId);
+        if (!existing || isBetterVersion(m, existing)) {
+          byMatchId.set(m.matchId, m);
+        }
       }
+    }
+
+    const allMatches = [];
+
+    for (const m of byMatchId.values()) {
+      const isHome = teamById[m.team1.id] !== undefined;
+      const shiTeam = isHome ? teamById[m.team1.id] : teamById[m.team2.id];
+
+      const team1Known = teamById[m.team1.id];
+      const team2Known = teamById[m.team2.id];
+
+      const override = overrides[m.matchId];
+      const finalDate = override?.date ?? m.details?.date;
+      const finalTime = override?.time ?? m.details?.time;
+
+      const relatedTeams = [team1Known?.name, team2Known?.name].filter(Boolean);
+
+      allMatches.push({
+        matchId: m.matchId,
+        date: finalDate,
+        time: finalTime,
+        homeTeam: team1Known ? team1Known.name : m.team1.name,
+        awayTeam: team2Known ? team2Known.name : m.team2.name,
+        location: m.location,
+        isHomeMatch: isHome,
+        result: m.showResults ? `${m.team1.result} - ${m.team2.result}` : null,
+        team: shiTeam?.name,
+        teams: relatedTeams,
+        category: shiTeam?.category,
+        division: shiTeam?.division,
+      });
     }
 
     allMatches.sort((a, b) => parseDanishDate(a.date, a.time) - parseDanishDate(b.date, b.time));
