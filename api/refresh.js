@@ -1,3 +1,4 @@
+import { overrides } from './overrides.js';
 export const config = { maxDuration: 60 };
 
 import { put } from '@vercel/blob';
