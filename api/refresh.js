@@ -1,7 +1,7 @@
-import { overrides } from './overrides.js';
 export const config = { maxDuration: 60 };
 
 import { put } from '@vercel/blob';
+import { overrides } from './overrides.js';
 
 const ORG_ID = 10338; // SHI Hjørring Padel
 
@@ -81,10 +81,14 @@ export default async function handler(req, res) {
         const team1Known = teamById[m.team1.id];
         const team2Known = teamById[m.team2.id];
 
+        const override = overrides[m.matchId];
+        const finalDate = override?.date ?? m.details?.date;
+        const finalTime = override?.time ?? m.details?.time;
+
         allMatches.push({
           matchId: m.matchId,
-          date: m.details?.date,
-          time: m.details?.time,
+          date: finalDate,
+          time: finalTime,
           homeTeam: team1Known ? team1Known.name : m.team1.name,
           awayTeam: team2Known ? team2Known.name : m.team2.name,
           location: m.location,
