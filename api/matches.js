@@ -2,7 +2,7 @@ export const config = { maxDuration: 60 };
 
 const ORG_ID = 10338; // SHI Hjørring Padel
 
-async function fetchWithTimeout(url, ms = 15000) {
+async function fetchWithTimeout(url, ms = 20000) {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), ms);
   try {
@@ -42,18 +42,34 @@ async function getOrgTeams() {
   return teams;
 }
 
+// Kør kald i bundter af BATCH_SIZE ad gangen i stedet for alle på én gang
+async function fetchInBatches(teams, batchSize = 5) {
+  const results = [];
+  for (let i = 0; i < teams.length; i += batchSize) {
+    const batch = teams.slice(i, i + batchSize);
+    const batchResults = await Promise.all(
+      batch.map(async (team) => {
+        const data = await fetchWithTimeout(
+          `https://api.rankedin.com/v1/teamleague/GetTeamMatchesAsync?teamid=${team.id}&language=en`
+        );
+        if (!data) {
+          console.log('FEJLEDE for hold:', team.name, team.id);
+        }
+        return data?.matches ?? [];
+      })
+    );
+    results.push(...batchResults);
+  }
+  return results;
+}
+
 export default async function handler(req, res) {
   try {
     const teams = await getOrgTeams();
-    const teamById = Object.fromEntries(teams.map((t) => [t.id, t]));
+    console.log('Antal hold fundet:', teams.length);
 
-    const matchLists = await Promise.all(
-      teams.map((team) =>
-        fetchWithTimeout(
-          `https://api.rankedin.com/v1/teamleague/GetTeamMatchesAsync?teamid=${team.id}&language=en`
-        ).then((data) => data?.matches ?? [])
-      )
-    );
+    const teamById = Object.fromEntries(teams.map((t) => [t.id, t]));
+    const matchLists = await fetchInBatches(teams, 5);
 
     const seen = new Set();
     const allMatches = [];
