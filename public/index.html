@@ -176,9 +176,16 @@ async function loadMatches() {
 }
 
 function populateTeamDropdown() {
+  const teamCategory = {};
+  allMatches.forEach(m => { teamCategory[m.team] = m.category; });
+
   const teams = [...new Set(allMatches.map(m => m.team))];
 
   teams.sort((a, b) => {
+    const catA = teamCategory[a] === 'herrer' ? 0 : 1;
+    const catB = teamCategory[b] === 'herrer' ? 0 : 1;
+    if (catA !== catB) return catA - catB;
+
     const numA = parseInt((a.match(/\d+/g) || []).pop() || 0, 10);
     const numB = parseInt((b.match(/\d+/g) || []).pop() || 0, 10);
     if (numA !== numB) return numA - numB;
