@@ -158,3 +158,169 @@
   .empty, .loading {
     text-align: center;
     color: var(--text-dim);
+    padding: 2rem;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-top">
+    <img src="/logo.png" alt="SHI Hjørring Padel logo" class="club-logo">
+    <a href="https://purepadel.dk" target="_blank" rel="noopener" class="shop-badge">
+      🛒 Se udstyr på PurePadel.dk
+    </a>
+  </div>
+  <h1>SHI Hjørring Padel</h1>
+  <p>Overblik over holdkampe – hjemme og ude</p>
+</header>
+
+<div class="filters">
+  <div class="filter-group" id="filter-side">
+    <button data-value="all" class="active">Alle</button>
+    <button data-value="home">Hjemme</button>
+    <button data-value="away">Ude</button>
+  </div>
+  <div class="filter-group" id="filter-category">
+    <button data-value="all" class="active">Alle</button>
+    <button data-value="herrer">Herrer</button>
+    <button data-value="damer">Damer</button>
+  </div>
+  <div class="filter-group" id="filter-status">
+    <button data-value="all" class="active">Alle</button>
+    <button data-value="upcoming">Kommende</button>
+    <button data-value="played">Spillede</button>
+  </div>
+  <select id="filter-team">
+    <option value="all">Alle hold</option>
+  </select>
+</div>
+
+<div class="matches" id="matches">
+  <div class="loading">Henter kampe…</div>
+</div>
+
+<script>
+let allMatches = [];
+let state = { side: 'all', category: 'all', team: 'all', status: 'all' };
+
+function parseMatchDateTime(m) {
+  const [day, month, year] = m.date.split('/').map(Number);
+  const timePart = (m.time.split(' ')[1] || '00:00');
+  const [hour, minute] = timePart.split(':').map(Number);
+  return new Date(year, month - 1, day, hour, minute).getTime();
+}
+
+async function loadMatches() {
+  try {
+    const res = await fetch('/api/matches');
+    const data = await res.json();
+    allMatches = data.matches || [];
+    populateTeamDropdown();
+    render();
+  } catch (err) {
+    document.getElementById('matches').innerHTML =
+      '<div class="empty">Kunne ikke hente kampe lige nu.</div>';
+  }
+}
+
+function populateTeamDropdown() {
+  const teamCategory = {};
+  allMatches.forEach(m => { teamCategory[m.team] = m.category; });
+
+  const teams = [...new Set(allMatches.map(m => m.team))];
+
+  teams.sort((a, b) => {
+    const catA = teamCategory[a] === 'herrer' ? 0 : 1;
+    const catB = teamCategory[b] === 'herrer' ? 0 : 1;
+    if (catA !== catB) return catA - catB;
+
+    const numA = parseInt((a.match(/\d+/g) || []).pop() || 0, 10);
+    const numB = parseInt((b.match(/\d+/g) || []).pop() || 0, 10);
+    if (numA !== numB) return numA - numB;
+    return a.localeCompare(b);
+  });
+
+  const select = document.getElementById('filter-team');
+  teams.forEach(team => {
+    const opt = document.createElement('option');
+    opt.value = team;
+    opt.textContent = team;
+    select.appendChild(opt);
+  });
+}
+
+function formatDate(dateStr) {
+  const [d, m, y] = dateStr.split('/');
+  const months = ['jan','feb','mar','apr','maj','jun','jul','aug','sep','okt','nov','dec'];
+  return `${d}. ${months[parseInt(m,10)-1]} ${y}`;
+}
+
+function formatTime(timeStr) {
+  const parts = timeStr.split(' ');
+  return parts[1] || '';
+}
+
+function render() {
+  const now = Date.now();
+
+  const filtered = allMatches.filter(m => {
+    if (state.side === 'home' && !m.isHomeMatch) return false;
+    if (state.side === 'away' && m.isHomeMatch) return false;
+    if (state.category !== 'all' && m.category !== state.category) return false;
+    if (state.team !== 'all' && m.team !== state.team) return false;
+    if (state.status === 'upcoming' && parseMatchDateTime(m) <= now) return false;
+    if (state.status === 'played' && parseMatchDateTime(m) > now) return false;
+    return true;
+  });
+
+  const container = document.getElementById('matches');
+
+  if (filtered.length === 0) {
+    container.innerHTML = '<div class="empty">Ingen kampe matcher dine filtre.</div>';
+    return;
+  }
+
+  container.innerHTML = filtered.map(m => `
+    <div class="match-card">
+      <div>
+        <div class="match-teams">
+          ${m.homeTeam} <span class="vs">vs</span> ${m.awayTeam}
+        </div>
+        <div class="match-date">${formatDate(m.date)} · ${formatTime(m.time)}</div>
+        <div class="match-location">${m.location || 'Lokation ukendt'}</div>
+      </div>
+      <div style="display:flex; align-items:center; gap:0.75rem;">
+        <span class="badge ${m.isHomeMatch ? 'home' : 'away'}">
+          ${m.isHomeMatch ? 'Hjemme' : 'Ude'}
+        </span>
+        <span class="result">${m.result || '–'}</span>
+      </div>
+    </div>
+  `).join('');
+}
+
+function setupFilterGroup(id, key) {
+  const group = document.getElementById(id);
+  group.addEventListener('click', (e) => {
+    if (e.target.tagName !== 'BUTTON') return;
+    group.querySelectorAll('button').forEach(b => b.classList.remove('active'));
+    e.target.classList.add('active');
+    state[key] = e.target.dataset.value;
+    render();
+  });
+}
+
+setupFilterGroup('filter-side', 'side');
+setupFilterGroup('filter-category', 'category');
+setupFilterGroup('filter-status', 'status');
+document.getElementById('filter-team').addEventListener('change', (e) => {
+  state.team = e.target.value;
+  render();
+});
+
+loadMatches();
+</script>
+
+</body>
+</html>
