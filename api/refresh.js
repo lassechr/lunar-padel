@@ -80,12 +80,15 @@ export default async function handler(req, res) {
         const isHome = teamById[m.team1.id] !== undefined;
         const shiTeam = isHome ? teamById[m.team1.id] : teamById[m.team2.id];
 
+        const team1Known = teamById[m.team1.id];
+        const team2Known = teamById[m.team2.id];
+
         allMatches.push({
           matchId: m.matchId,
           date: m.details?.date,
           time: m.details?.time,
-          homeTeam: isHome ? shiTeam?.name : m.team1.name,
-          awayTeam: isHome ? m.team2.name : shiTeam?.name,
+          homeTeam: team1Known ? team1Known.name : m.team1.name,
+          awayTeam: team2Known ? team2Known.name : m.team2.name,
           location: m.location,
           isHomeMatch: isHome,
           result: m.showResults ? `${m.team1.result} - ${m.team2.result}` : null,
