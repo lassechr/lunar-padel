@@ -269,8 +269,8 @@ function render() {
     if (state.side === 'away' && m.isHomeMatch) return false;
     if (state.category !== 'all' && m.category !== state.category) return false;
     if (state.team !== 'all' && m.team !== state.team) return false;
-    if (state.status === 'upcoming' && parseMatchDateTime(m) <= now) return false;
-    if (state.status === 'played' && parseMatchDateTime(m) > now) return false;
+    if (state.status === 'upcoming' && !(m.result === null && parseMatchDateTime(m) > now)) return false;
+    if (state.status === 'played' && m.result === null) return false;
     return true;
   });
 
