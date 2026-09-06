@@ -128,10 +128,16 @@
     font-size: 0.95rem;
   }
   .match-teams .vs { color: var(--text-dim); font-weight: 400; }
-  .match-meta {
+  .match-date {
+    color: var(--accent);
+    font-size: 0.85rem;
+    font-weight: 700;
+    margin-top: 0.3rem;
+  }
+  .match-location {
     color: var(--text-dim);
-    font-size: 0.8rem;
-    margin-top: 0.2rem;
+    font-size: 0.78rem;
+    margin-top: 0.15rem;
   }
   .badge {
     font-size: 0.7rem;
@@ -272,9 +278,8 @@ function render() {
         <div class="match-teams">
           ${m.homeTeam} <span class="vs">vs</span> ${m.awayTeam}
         </div>
-        <div class="match-meta">
-          ${formatDate(m.date)} · ${formatTime(m.time)} · ${m.location || 'Lokation ukendt'}
-        </div>
+        <div class="match-date">${formatDate(m.date)} · ${formatTime(m.time)}</div>
+        <div class="match-location">${m.location || 'Lokation ukendt'}</div>
       </div>
       <div style="display:flex; align-items:center; gap:0.75rem;">
         <span class="badge ${m.isHomeMatch ? 'home' : 'away'}">
@@ -309,4 +314,4 @@ loadMatches();
 </script>
 
 </body>
-</html> 
+</html>
