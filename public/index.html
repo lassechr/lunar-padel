@@ -202,6 +202,7 @@
 
 <div class="filters">
   <button id="week-toggle" class="week-toggle">📅 Denne uge</button>
+  <button id="standings-jump" class="week-toggle">📊 Stillinger</button>
   <div class="filter-group" id="filter-side">
     <button data-value="all" class="active">Alle</button>
     <button data-value="home">Hjemme</button>
@@ -226,8 +227,14 @@
   <div class="loading">Henter kampe…</div>
 </div>
 
+<section id="standings-section" style="max-width:900px; margin: 2rem auto; padding-top: 1rem;">
+  <h2 style="font-size:1.1rem; color:var(--text-dim); margin-bottom:0.8rem;">Stillinger på RankedIn</h2>
+  <div id="standingsList" class="matches"></div>
+</section>
+
 <script>
 let allMatches = [];
+let teamsIndex = [];
 let state = { side: 'all', category: 'all', team: 'all', status: 'upcoming', thisWeek: false };
 
 function parseMatchDateTime(m) {
@@ -242,7 +249,9 @@ async function loadMatches() {
     const res = await fetch('/api/matches');
     const data = await res.json();
     allMatches = data.matches || [];
+    teamsIndex = data.teamsIndex || [];
     populateTeamDropdown();
+    renderStandingsLinks();
     render();
   } catch (err) {
     document.getElementById('matches').innerHTML =
@@ -274,6 +283,26 @@ function populateTeamDropdown() {
     opt.textContent = team;
     select.appendChild(opt);
   });
+}
+
+function renderStandingsLinks() {
+  const teams = [...teamsIndex].sort((a, b) => {
+    const catA = a.name.toLowerCase().includes('dame') ? 1 : 0;
+    const catB = b.name.toLowerCase().includes('dame') ? 1 : 0;
+    if (catA !== catB) return catA - catB;
+    const numA = parseInt((a.name.match(/\d+/g) || []).pop() || 0, 10);
+    const numB = parseInt((b.name.match(/\d+/g) || []).pop() || 0, 10);
+    return numA - numB;
+  });
+
+  const container = document.getElementById('standingsList');
+  container.innerHTML = teams.map(t => `
+    <a href="https://rankedin.com/en/team/homepage/${t.id}" target="_blank" rel="noopener"
+       style="display:flex; justify-content:space-between; align-items:center; background:var(--card); border:1px solid var(--card-border); border-radius:12px; padding:0.8rem 1rem; text-decoration:none; color:var(--text);">
+      <span>${t.name}</span>
+      <span style="color:var(--accent);">↗</span>
+    </a>
+  `).join('');
 }
 
 function formatDate(dateStr) {
@@ -355,6 +384,10 @@ document.getElementById('week-toggle').addEventListener('click', (e) => {
   state.thisWeek = !state.thisWeek;
   e.target.classList.toggle('active', state.thisWeek);
   render();
+});
+
+document.getElementById('standings-jump').addEventListener('click', () => {
+  document.getElementById('standings-section').scrollIntoView({ behavior: 'smooth' });
 });
 
 loadMatches();
