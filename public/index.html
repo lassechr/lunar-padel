@@ -296,7 +296,7 @@ function render() {
     if (state.side === 'away' && m.isHomeMatch) return false;
     if (state.category !== 'all' && m.category !== state.category) return false;
     if (state.team !== 'all' && !(m.teams || [m.team]).includes(state.team)) return false;
-    if (state.status === 'upcoming' && m.result !== null) return false;
+    if (state.status === 'upcoming' && !(m.result === null && parseMatchDateTime(m) > now)) return false;
     if (state.status === 'played' && m.result === null) return false;
     if (state.thisWeek) {
       const t = parseMatchDateTime(m);
