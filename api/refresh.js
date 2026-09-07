@@ -68,13 +68,11 @@ async function fetchInBatches(teams, batchSize = 10) {
   return results;
 }
 
-// Vælger den bedste version, hvis samme matchId findes flere gange med modstridende data
 function isBetterVersion(candidate, current) {
   const candidateComplete = !!candidate.location && !!candidate.details?.date;
   const currentComplete = !!current.location && !!current.details?.date;
   if (candidateComplete && !currentComplete) return true;
   if (!candidateComplete && currentComplete) return false;
-  // Begge lige komplette (eller lige ufuldstændige) - foretræk den med et indtastet resultat
   if (candidate.showResults && !current.showResults) return true;
   return false;
 }
@@ -130,7 +128,11 @@ export default async function handler(req, res) {
 
     allMatches.sort((a, b) => parseDanishDate(a.date, a.time) - parseDanishDate(b.date, b.time));
 
-    await put('matches.json', JSON.stringify({ matches: allMatches, updatedAt: new Date().toISOString() }), {
+    await put('matches.json', JSON.stringify({
+      matches: allMatches,
+      teamsIndex: teams.map(t => ({ id: t.id, name: t.name })),
+      updatedAt: new Date().toISOString()
+    }), {
       access: 'public',
       addRandomSuffix: false,
       allowOverwrite: true,
