@@ -133,6 +133,18 @@
     flex-direction: column;
     gap: 0.6rem;
   }
+  .date-heading {
+    font-size: 0.78rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--text-dim);
+    margin: 1.2rem 0 0.2rem;
+    padding-left: 0.2rem;
+  }
+  .date-heading:first-child {
+    margin-top: 0;
+  }
   .match-card {
     background: var(--card);
     border: 1px solid var(--card-border);
@@ -243,11 +255,34 @@ let allMatches = [];
 let teamsIndex = [];
 let state = { side: 'all', category: 'all', team: 'all', status: 'upcoming', thisWeek: false };
 
+const WEEKDAYS = ['søndag','mandag','tirsdag','onsdag','torsdag','fredag','lørdag'];
+const MONTHS = ['jan','feb','mar','apr','maj','jun','jul','aug','sep','okt','nov','dec'];
+
 function parseMatchDateTime(m) {
   const [day, month, year] = m.date.split('/').map(Number);
   const timePart = (m.time.split(' ')[1] || '00:00');
   const [hour, minute] = timePart.split(':').map(Number);
   return new Date(year, month - 1, day, hour, minute).getTime();
+}
+
+function getDateKey(m) {
+  return m.date; // "DD/MM/ÅÅÅÅ" er allerede unik pr. dag
+}
+
+function getDateHeading(m) {
+  const [day, month, year] = m.date.split('/').map(Number);
+  const matchDay = new Date(year, month - 1, day);
+  const today = new Date();
+  today.setHours(0,0,0,0);
+
+  const diffDays = Math.round((matchDay - today) / (1000 * 60 * 60 * 24));
+
+  if (diffDays === 0) return 'I dag';
+  if (diffDays === 1) return 'I morgen';
+  if (diffDays === -1) return 'I går';
+
+  const weekday = WEEKDAYS[matchDay.getDay()];
+  return `${weekday.charAt(0).toUpperCase() + weekday.slice(1)} ${day}. ${MONTHS[month-1]}`;
 }
 
 async function loadMatches() {
@@ -311,12 +346,6 @@ function renderStandingsLinks() {
   `).join('');
 }
 
-function formatDate(dateStr) {
-  const [d, m, y] = dateStr.split('/');
-  const months = ['jan','feb','mar','apr','maj','jun','jul','aug','sep','okt','nov','dec'];
-  return `${d}. ${months[parseInt(m,10)-1]} ${y}`;
-}
-
 function formatTime(timeStr) {
   const parts = timeStr.split(' ');
   return parts[1] || '';
@@ -347,24 +376,36 @@ function render() {
     return;
   }
 
-  container.innerHTML = filtered.map(m => `
-    <div class="match-card">
-      <div>
-        <div class="match-teams">
-          ${m.homeTeam} <span class="vs">vs</span> ${m.awayTeam}
+  let html = '';
+  let lastDateKey = null;
+
+  for (const m of filtered) {
+    const dateKey = getDateKey(m);
+    if (dateKey !== lastDateKey) {
+      html += `<div class="date-heading">${getDateHeading(m)}</div>`;
+      lastDateKey = dateKey;
+    }
+    html += `
+      <div class="match-card">
+        <div>
+          <div class="match-teams">
+            ${m.homeTeam} <span class="vs">vs</span> ${m.awayTeam}
+          </div>
+          ${m.division ? `<div class="match-division">${m.division}</div>` : ''}
+          <div class="match-date">${formatTime(m.time)}</div>
+          <div class="match-location">${m.location || 'Lokation ukendt'}</div>
         </div>
-        ${m.division ? `<div class="match-division">${m.division}</div>` : ''}
-        <div class="match-date">${formatDate(m.date)} · ${formatTime(m.time)}</div>
-        <div class="match-location">${m.location || 'Lokation ukendt'}</div>
+        <div style="display:flex; align-items:center; gap:0.75rem;">
+          <span class="badge ${m.isHomeMatch ? 'home' : 'away'}">
+            ${m.isHomeMatch ? 'Hjemme' : 'Ude'}
+          </span>
+          <span class="result">${m.result || '–'}</span>
+        </div>
       </div>
-      <div style="display:flex; align-items:center; gap:0.75rem;">
-        <span class="badge ${m.isHomeMatch ? 'home' : 'away'}">
-          ${m.isHomeMatch ? 'Hjemme' : 'Ude'}
-        </span>
-        <span class="result">${m.result || '–'}</span>
-      </div>
-    </div>
-  `).join('');
+    `;
+  }
+
+  container.innerHTML = html;
 }
 
 function setupFilterGroup(id, key) {
