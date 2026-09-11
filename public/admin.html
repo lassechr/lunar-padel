@@ -110,7 +110,7 @@
 
   #shareText {
     width: 100%;
-    min-height: 200px;
+    min-height: 260px;
     padding: 0.8rem;
     border-radius: 10px;
     border: 1px solid var(--card-border);
@@ -288,20 +288,29 @@ function generateShareText() {
     })
     .sort((a, b) => parseMatchDateTime(a) - parseMatchDateTime(b));
 
-  let text = '📅 Ugens kampe – SHI Hjørring Padel\n\n';
-  let lastHeading = null;
+  const homeMatches = upcoming.filter(m => m.isHomeMatch);
+  const awayMatches = upcoming.filter(m => !m.isHomeMatch);
 
-  for (const m of upcoming) {
-    const heading = getDateHeading(m);
-    if (heading !== lastHeading) {
-      text += `${heading}\n`;
-      lastHeading = heading;
+  function buildSection(title, matches) {
+    if (matches.length === 0) return `${title}\nIngen kampe\n`;
+    let text = `${title}\n`;
+    let lastHeading = null;
+    for (const m of matches) {
+      const heading = getDateHeading(m);
+      if (heading !== lastHeading) {
+        text += `\n${heading}\n`;
+        lastHeading = heading;
+      }
+      const time = m.time.split(' ')[1] || '';
+      text += `${m.homeTeam} vs ${m.awayTeam} – ${time}${m.location ? ' – ' + m.location : ''}\n`;
     }
-    const icon = m.isHomeMatch ? '🏠' : '🚗';
-    const time = m.time.split(' ')[1] || '';
-    text += `${icon} ${m.homeTeam} vs ${m.awayTeam} – ${time}${m.location ? ' – ' + m.location : ''}\n`;
+    return text;
   }
 
+  let text = '📅 Ugens kampe – SHI Hjørring Padel\n\n';
+  text += buildSection('🏠 HJEMMEKAMPE', homeMatches);
+  text += '\n';
+  text += buildSection('🚗 UDEKAMPE', awayMatches);
   text += '\nSe hele oversigten: https://lunar.purepadel.dk';
 
   document.getElementById('shareText').value = text;
