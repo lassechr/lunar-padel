@@ -1,10 +1,11 @@
-import { list, put } from '@vercel/blob';
+import { put } from '@vercel/blob';
+
+const OVERRIDES_URL = 'https://udfows3yalpli3zt.public.blob.vercel-storage.com/overrides.json';
 
 export async function getOverrides() {
   try {
-    const { blobs } = await list({ prefix: 'overrides.json', limit: 1 });
-    if (blobs.length === 0) return {};
-    const res = await fetch(blobs[0].url);
+    const res = await fetch(OVERRIDES_URL, { cache: 'no-store' });
+    if (!res.ok) return {};
     return await res.json();
   } catch {
     return {};
